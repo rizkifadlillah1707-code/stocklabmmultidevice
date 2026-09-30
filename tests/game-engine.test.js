@@ -423,3 +423,18 @@ test('six economy rounds finish and produce finite scores', () => {
   assert.equal(scores.length, 3);
   assert.ok(scores.every((score) => Number.isFinite(score.total)));
 });
+
+test('action cards are dealt at round start and visible during bidding', () => {
+  const game = setupGame();
+  assert.equal(game.phase, 'bidding');
+  assert.equal(game.pool.length, game.players.length * 2);
+  const ids = game.pool.map((card) => card.id);
+  resolveBids(game, { a: { round: 1, bid: 1 }, b: { round: 1, bid: 1 }, c: { round: 1, bid: 1 } });
+  assert.deepEqual(game.pool.map((card) => card.id), ids);
+
+  game.pool = [];
+  game.phase = 'between';
+  startNextRound(game);
+  assert.equal(game.phase, 'bidding');
+  assert.equal(game.pool.length, game.players.length * 2);
+});
