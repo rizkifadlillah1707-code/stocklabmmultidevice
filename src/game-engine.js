@@ -147,6 +147,7 @@ export function resolveBids(game, bids) {
 function applyRumor(game, sectorId, direction) {
   const sector = game.sectors.find((item) => item.id === sectorId);
   assert(sector, 'Pilih sektor yang valid.');
+  assert(direction === 'up' || direction === 'down', 'Arah Rumor tidak valid.');
   const index = sector.track.indexOf(sector.price);
   const next = index + (direction === 'up' ? 1 : -1);
   assert(next >= 0 && next < sector.track.length, 'Harga sudah berada di batas tangga.');
@@ -163,12 +164,15 @@ function applyActionEffect(game, player, card, data) {
     case 'rumor':
       {
         const moves = Array.isArray(data.moves) ? data.moves.slice(0, 2) : [{ sector: data.sector, direction: data.direction }];
+        assert(moves.length >= 1, 'Rumor harus melakukan minimal satu pergerakan.');
         for (const move of moves) applyRumor(game, move.sector, move.direction);
         game.lastMessage = `${player.name} menggunakan Rumor (${moves.length} pergerakan harga).`;
       }
       break;
     case 'quickbuy': {
-      const ids = Array.isArray(data.additionalIds) ? data.additionalIds.slice(0, 2) : [];
+      const ids = data.additionalIds === undefined ? [] : data.additionalIds;
+      assert(Array.isArray(ids) && ids.length <= 2 && new Set(ids).size === ids.length, 'Quickbuy dapat memilih maksimal dua kartu berbeda.');
+      assert(ids.every((id) => game.pool.some((item) => item.id === id)), 'Kartu Quickbuy tambahan tidak tersedia.');
       for (const id of ids) {
         const index = game.pool.findIndex((item) => item.id === id);
         if (index >= 0) {
@@ -182,11 +186,17 @@ function applyActionEffect(game, player, card, data) {
     }
     case 'fee': {
       const cost = (player.holdings[card.theme] || 0) + 1;
-      player.coins = Math.max(0, player.coins - cost);
       const sectorId = data.sector;
-      const quantity = Math.max(0, Math.floor(Number(data.quantity) || 0));
+      const quantity = data.quantity === undefined ? 0 : Number(data.quantity);
       if (sectorId) {
+        assert(Object.hasOwn(player.holdings, sectorId), 'Sektor untuk dijual tidak valid.');
+        assert(Number.isInteger(quantity) && quantity >= 0, 'Jumlah saham yang dijual tidak valid.');
         assert(player.holdings[sectorId] >= quantity, 'Jumlah saham untuk dijual melebihi kepemilikan.');
+      } else {
+        assert(quantity === 0, 'Pilih sektor untuk menjual saham.');
+      }
+      player.coins = Math.max(0, player.coins - cost);
+      if (sectorId) {
         player.holdings[sectorId] -= quantity;
         player.coins += quantity * sectorPrice(game, sectorId);
       }
@@ -211,7 +221,7 @@ function applyActionEffect(game, player, card, data) {
   }
 }
 
-export function applyAction(game, uid, payload) {
+function applyActionInPlace(game, uid, payload) {
   assert(game.phase === 'action', 'Bukan fase aksi.');
   assert(payload.mode === 'save' || payload.mode === 'activate', 'Pilih untuk menyimpan atau mengaktifkan kartu.');
   if (!Array.isArray(game.quickbuySkipped)) game.quickbuySkipped = [];
@@ -231,15 +241,24 @@ export function applyAction(game, uid, payload) {
   if (game.pool.length === 0) {
     game.phase = 'sell';
     game.sellIndex = 0;
+    game.quickbuySkipped = [];
   } else {
-    if (game.order.every((playerUid) => game.quickbuySkipped.includes(playerUid))) game.quickbuySkipped = [];
     game.turnIndex = (game.turnIndex + 1) % game.order.length;
     let guard = 0;
     while (game.quickbuySkipped.includes(game.order[game.turnIndex]) && guard < game.order.length) {
+      const skippedUid = game.order[game.turnIndex];
+      game.quickbuySkipped = game.quickbuySkipped.filter((uid) => uid !== skippedUid);
       game.turnIndex = (game.turnIndex + 1) % game.order.length;
       guard += 1;
     }
   }
+  return game;
+}
+
+export function applyAction(game, uid, payload) {
+  const draft = structuredClone(game);
+  applyActionInPlace(draft, uid, payload);
+  Object.assign(game, draft);
   return game;
 }
 
@@ -325,10 +344,10 @@ export function resolveEconomy(game) {
         const mining = game.sectors.find((item) => item.id === 'tambang');
         moveSector(game, mining, 1, log);
         baseSteps[mining.id] = (baseSteps[mining.id] || 0) + 1;
-        baseSteps[sector.id] = 0;
+        if (sector.id !== mining.id) baseSteps[sector.id] = 0;
       } else {
         moveSector(game, sector, card.steps, log);
-        baseSteps[sector.id] = card.steps;
+        baseSteps[sector.id] = (baseSteps[sector.id] || 0) + card.steps;
       }
 
       if (card.side === 'dividen') {
