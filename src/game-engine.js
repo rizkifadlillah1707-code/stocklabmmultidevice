@@ -214,6 +214,7 @@ function applyActionEffect(game, player, card, data) {
 export function applyAction(game, uid, payload) {
   assert(game.phase === 'action', 'Bukan fase aksi.');
   assert(payload.mode === 'save' || payload.mode === 'activate', 'Pilih untuk menyimpan atau mengaktifkan kartu.');
+  if (!Array.isArray(game.quickbuySkipped)) game.quickbuySkipped = [];
   const player = currentPlayer(game);
   assert(player?.uid === uid, 'Sekarang bukan giliran Anda.');
   const cardIndex = game.pool.findIndex((card) => card.id === payload.cardId);

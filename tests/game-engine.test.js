@@ -93,6 +93,25 @@ test('Rumor applies at most two movements and Quickbuy stores two extra cards', 
   assert.equal(currentPlayer(quickGame).uid, 'b');
 });
 
+test('Quickbuy migrates a saved game without skip tracking', () => {
+  const game = setupGame();
+  game.phase = 'action';
+  delete game.quickbuySkipped;
+  game.pool = [
+    { id: 'quick', theme: 'reksadana', effect: 'quickbuy' },
+    { id: 'extra-a', theme: 'tambang', effect: 'rumor' },
+    { id: 'extra-b', theme: 'konsumer', effect: 'fee' },
+    { id: 'extra-c', theme: 'agrikultur', effect: 'info' }
+  ];
+  assert.doesNotThrow(() => applyAction(game, 'a', {
+    cardId: 'quick',
+    mode: 'activate',
+    effectData: { additionalIds: ['extra-a', 'extra-b'] }
+  }));
+  assert.deepEqual(game.quickbuySkipped, ['a']);
+  assert.equal(currentPlayer(game).uid, 'b');
+});
+
 test('Trading Fee remains valid when the player has nothing to sell', () => {
   const game = setupGame();
   game.phase = 'action';
