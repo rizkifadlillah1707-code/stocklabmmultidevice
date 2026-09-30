@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fff7f6" />
+    <meta name="description" content="StockLab Online — simulasi lantai bursa bersama teman, dari perangkat masing-masing." />
+    <title>StockLab Online — Simulasi Lantai Bursa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="StockLab Online">
+          <span class="brand-mark">S</span><span>Stock<span class="brand-accent">Lab</span></span>
+          <span class="online-pill"><i></i> ONLINE</span>
+        </a>
+        <span id="connection-status" class="connection-status">Menghubungkan…</span>
+      </header>
+
+      <main>
+        <section id="home-screen" class="screen">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <p class="eyebrow">SIMULASI PASAR MODAL · MULTIPEMAIN</p>
+              <h1>Bursa seru.<br /><span>Satu room.</span></h1>
+              <p class="hero-description">Buat room sebagai moderator, bagikan kode, lalu mainkan StockLab bersama dari perangkat masing-masing.</p>
+              <div class="feature-row"><span>01 · Buat room</span><span>02 · Undang pemain</span><span>03 · Mulai investasi</span></div>
+            </div>
+            <div class="join-card">
+              <div class="tabs" role="tablist" aria-label="Pilih cara masuk">
+                <button class="tab active" id="tab-create" role="tab" aria-selected="true">Buat room</button>
+                <button class="tab" id="tab-join" role="tab" aria-selected="false">Gabung room</button>
+              </div>
+              <form id="room-form">
+                <label for="player-name">Nama pemain</label>
+                <input id="player-name" name="playerName" maxlength="20" placeholder="Contoh: Rizki" autocomplete="nickname" required />
+                <div id="join-code-wrap" class="field-hidden">
+                  <label for="room-code">Kode room</label>
+                  <input id="room-code" name="roomCode" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters" />
+                </div>
+                <button class="button button-primary button-wide" id="room-submit" type="submit">Buat room baru <span>→</span></button>
+              </form>
+              <p class="card-footnote">Gratis dimainkan · Tidak perlu membuat akun</p>
+              <p id="home-error" class="error-text" role="alert" hidden></p>
+            </div>
+          </div>
+          <div class="home-note"><span class="note-icon">✦</span><span>Moderator mengontrol jalannya permainan. Setiap pemain mengirim tawaran dan memilih aksi dari ponselnya.</span></div>
+        </section>
+
+        <section id="lobby-screen" class="screen" hidden>
+          <div class="lobby-layout">
+            <div class="lobby-main">
+              <p class="eyebrow" id="lobby-role">MENUNGGU PEMAIN</p>
+              <h1>Room <span id="lobby-code" class="room-code">------</span></h1>
+              <p id="lobby-message" class="hero-description">Bagikan kode atau tautan ini kepada peserta.</p>
+              <div class="share-box"><span id="share-url"></span><button class="button button-secondary" id="btn-copy-link" type="button">Salin tautan</button></div>
+              <div class="player-panel">
+                <div class="section-heading"><h2>Pemain bergabung</h2><span id="player-count" class="count-badge">0</span></div>
+                <div id="lobby-players" class="lobby-players"></div>
+              </div>
+            </div>
+            <aside class="lobby-aside">
+              <div class="host-card">
+                <span class="host-icon">⌁</span>
+                <h2 id="lobby-action-title">Room siap</h2>
+                <p id="lobby-action-copy">Tunggu semua pemain masuk sebelum memulai.</p>
+                <button class="button button-primary button-wide" id="btn-start-game" type="button" hidden>Mulai permainan <span>→</span></button>
+                <button class="button button-secondary button-wide" id="btn-leave-room" type="button">Keluar dari room</button>
+              </div>
+              <p class="tiny-note">Kode room berlaku selama room aktif. Jangan bagikan kode ke orang di luar permainan.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="game-screen" class="screen" hidden>
+          <div class="game-topline">
+            <div><p class="eyebrow" id="game-round-label">RONDE 1 · BIDDING</p><h1 id="game-phase-title">Tentukan urutan main</h1></div>
+            <div class="game-room-tag">ROOM <strong id="game-room-code">------</strong></div>
+          </div>
+          <div class="game-layout">
+            <div class="game-main">
+              <div class="market-strip" id="market-strip"></div>
+              <div id="phase-panel" class="phase-panel"></div>
+              <div id="game-message" class="status-message" role="status"></div>
+            </div>
+            <aside class="game-sidebar">
+              <div class="sidebar-heading"><h2>Portofolio</h2><span id="sidebar-round">RONDE 1</span></div>
+              <div id="game-players" class="game-players"></div>
+              <div id="host-tools" class="host-tools" hidden></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="error-screen" class="screen error-screen" hidden>
+          <div class="error-card"><div class="error-symbol">!</div><p class="eyebrow">TERJADI KENDALA</p><h1 id="fatal-title">Tidak dapat terhubung</h1><p id="fatal-message" class="hero-description"></p><button id="btn-return-home" class="button button-primary" type="button">Kembali ke awal</button></div>
+        </section>
+      </main>
+      <footer class="site-footer"><span>STOCKLAB ONLINE · BETA</span><span>Simulasi edukasi, bukan rekomendasi investasi.</span></footer>
+    </div>
+    <div id="toast-region" class="toast-region" aria-live="polite"></div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
