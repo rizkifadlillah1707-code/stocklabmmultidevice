@@ -49,7 +49,7 @@ const elements = {
   lobbyActionTitle: $('#lobby-action-title'), lobbyActionCopy: $('#lobby-action-copy'), startGame: $('#btn-start-game'),
   leaveRoom: $('#btn-leave-room'), copyLink: $('#btn-copy-link'), gameRoundLabel: $('#game-round-label'),
   gamePhaseTitle: $('#game-phase-title'), gameRoomCode: $('#game-room-code'), market: $('#market-strip'),
-  phasePanel: $('#phase-panel'), gamePlayers: $('#game-players'), gameMessage: $('#game-message'),
+  phasePanel: $('#phase-panel'), gamePlayers: $('#game-players'), portfolioDashboard: $('#portfolio-dashboard'), gameMessage: $('#game-message'),
   sidebarRound: $('#sidebar-round'), fatalTitle: $('#fatal-title'), fatalMessage: $('#fatal-message'),
   returnHome: $('#btn-return-home'), toastRegion: $('#toast-region'), hostTools: $('#host-tools')
 };
@@ -394,6 +394,31 @@ function renderPlayers() {
   });
 }
 
+function renderPoolPreview() {
+  const groups = new Map();
+  for (const card of game.pool) {
+    if (!groups.has(card.theme)) groups.set(card.theme, {});
+    const counts = groups.get(card.theme);
+    counts[card.effect] = (counts[card.effect] || 0) + 1;
+  }
+  const rows = [...groups.entries()].map(([theme, counts]) => `<div class="pool-group"><span class="action-sector">${escapeHtml(SECTOR_NAMES[theme])}</span><span class="pool-effects">${Object.entries(counts).map(([effect, count]) => `<span class="pool-chip">${escapeHtml(ACTION_LABELS[effect])}${count > 1 ? ` ×${count}` : ''}</span>`).join('')}</span></div>`).join('');
+  return `<div class="pool-preview"><h3>Kartu Aksi ronde ini · ${game.pool.length} kartu</h3><p class="phase-copy">Kartu ini akan dipilih bergiliran di Fase Aksi sesuai urutan hasil bidding. Gunakan sebagai bahan strategi tawaran Anda.</p>${rows}</div>`;
+}
+
+function renderPortfolioDashboard() {
+  const ids = [...game.sectors.map((sector) => sector.id), 'reksadana'];
+  const rank = new Map(game.order.map((uid, index) => [uid, index + 1]));
+  const sorted = [...game.players].sort((a, b) => rank.get(a.uid) - rank.get(b.uid));
+  const head = ids.map((id) => `<th>${escapeHtml(SECTOR_NAMES[id].replace('Saham ', ''))}<small>${sectorPrice(game, id)} koin</small></th>`).join('');
+  const body = sorted.map((player) => {
+    const value = ids.reduce((sum, id) => sum + (player.holdings[id] || 0) * sectorPrice(game, id), 0);
+    const cells = ids.map((id) => `<td class="${player.holdings[id] ? '' : 'zero'}">${player.holdings[id] || 0}</td>`).join('');
+    return `<tr class="${player.uid === user.uid ? 'me' : ''}"><th scope="row">${escapeHtml(player.name)}${player.uid === user.uid ? ' (Anda)' : ''}</th>${cells}<td class="value">${value}</td><td>${player.utang ? `${player.utang} utang` : '–'}</td></tr>`;
+  }).join('');
+  const totals = ids.map((id) => `<td>${game.players.reduce((sum, player) => sum + (player.holdings[id] || 0), 0)}</td>`).join('');
+  elements.portfolioDashboard.innerHTML = `<div class="sidebar-heading"><h2>Dashboard Portofolio</h2><span>TERBUKA UNTUK SEMUA</span></div><div class="table-scroll"><table class="portfolio-table"><thead><tr><th>Pemain</th>${head}<th>Nilai saham<small>koin</small></th><th>Utang</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total beredar</th>${totals}<td></td><td></td></tr></tfoot></table></div>`;
+}
+
 function renderBidding() {
   const player = playerByUid(game, user.uid);
   const coins = Number(privatePlayer?.coins ?? 0);
@@ -408,7 +433,7 @@ function renderBidding() {
     : `<form id="bid-form" class="bid-form"><label for="bid-amount">Tawaran rahasia · saldo ${coins} koin</label><input id="bid-amount" type="number" min="${minimumBid}" max="${coins}" value="${minimumBid}" required /><button class="button button-primary">Kunci tawaran</button></form>
        ${game.utangRemaining > 0 ? '<button class="button button-secondary" id="btn-loan" type="button">Pinjam 10 koin dari Bank</button>' : ''}`;
   const hostAction = isHost ? `<div class="status-item"><strong>${submitted}/${game.players.length} masuk</strong><span>${submitted === game.players.length ? 'Semua siap dibuka' : 'Tunggu semua tawaran'}</span></div><button class="button button-primary button-wide" id="btn-reveal-bids" type="button" ${submitted !== game.players.length || !fullGame ? 'disabled' : ''}>Buka tawaran & mulai fase aksi →</button>` : '';
-  elements.phasePanel.innerHTML = `<h2>Fase Bidding · Ronde ${game.round}</h2><p class="phase-copy">Masukkan tawaran dari perangkat Anda. Nilai tawaran tidak terlihat oleh peserta lain; saldo dibayar ke Bank saat hasil dibuka.</p>${bidForm}<div class="status-list"><div class="status-item"><span>${escapeHtml(progress)}</span><strong>${game.utangRemaining} kartu utang</strong></div></div>${hostAction}`;
+  elements.phasePanel.innerHTML = `<h2>Fase Bidding · Ronde ${game.round}</h2><p class="phase-copy">Masukkan tawaran dari perangkat Anda. Nilai tawaran tidak terlihat oleh peserta lain; saldo dibayar ke Bank saat hasil dibuka.</p>${renderPoolPreview()}${bidForm}<div class="status-list"><div class="status-item"><span>${escapeHtml(progress)}</span><strong>${game.utangRemaining} kartu utang</strong></div></div>${hostAction}`;
   $('#bid-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const amount = Number($('#bid-amount').value);
@@ -518,6 +543,7 @@ function renderGame() {
   elements.gameMessage.classList.toggle('error', false);
   renderMarket();
   renderPlayers();
+  renderPortfolioDashboard();
   if (game.phase === 'bidding') renderBidding();
   else if (game.phase === 'action') renderAction();
   else if (game.phase === 'sell') renderSale();

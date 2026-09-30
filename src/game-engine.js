@@ -61,7 +61,7 @@ export function createGame(players) {
     utang: 0
   }));
 
-  return {
+  const game = {
     round: 1,
     phase: 'bidding',
     players: playerStates,
@@ -78,6 +78,15 @@ export function createGame(players) {
     lastBids: null,
     utangRemaining: 5
   };
+  drawActionPool(game);
+  return game;
+}
+
+// Kartu aksi ronde ini diambil di awal ronde agar terlihat saat fase bidding.
+function drawActionPool(game) {
+  const n = game.players.length * 2;
+  if (game.actionDeck.length < n) game.actionDeck = [...game.actionDeck, ...createActionDeck()];
+  game.pool = game.actionDeck.splice(0, n);
 }
 
 export function playerByUid(game, uid) {
@@ -135,9 +144,6 @@ export function resolveBids(game, bids) {
   }
   game.order = ranked.map((player) => player.uid);
   game.lastBids = ranked.map((player, index) => ({ uid: player.uid, name: player.name, bid: Number(bids[player.uid].bid), rank: index + 1 }));
-  const n = game.players.length * 2;
-  if (game.actionDeck.length < n) game.actionDeck = [...game.actionDeck, ...createActionDeck()];
-  game.pool = game.actionDeck.splice(0, n);
   game.phase = 'action';
   game.turnIndex = 0;
   game.lastMessage = 'Tawaran dibuka. Urutan main ronde ini sudah ditentukan.';
@@ -404,6 +410,7 @@ export function startNextRound(game) {
   game.round += 1;
   game.phase = 'bidding';
   game.lastBids = null;
+  drawActionPool(game);
   game.lastMessage = `Ronde ${game.round} dimulai. Masukkan tawaran secara rahasia.`;
   return game;
 }
