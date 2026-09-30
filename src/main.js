@@ -395,6 +395,7 @@ function renderPlayers() {
 }
 
 function renderPoolPreview() {
+  if (!game.pool.length) return '';
   const groups = new Map();
   for (const card of game.pool) {
     if (!groups.has(card.theme)) groups.set(card.theme, {});
@@ -413,10 +414,10 @@ function renderPortfolioDashboard() {
   const body = sorted.map((player) => {
     const value = ids.reduce((sum, id) => sum + (player.holdings[id] || 0) * sectorPrice(game, id), 0);
     const cells = ids.map((id) => `<td class="${player.holdings[id] ? '' : 'zero'}">${player.holdings[id] || 0}</td>`).join('');
-    return `<tr class="${player.uid === user.uid ? 'me' : ''}"><th scope="row">${escapeHtml(player.name)}${player.uid === user.uid ? ' (Anda)' : ''}</th>${cells}<td class="value">${value}</td><td>${player.utang ? `${player.utang} utang` : '–'}</td></tr>`;
+    return `<tr class="${player.uid === user.uid ? 'me' : ''}"><th scope="row">${escapeHtml(player.name)}${player.uid === user.uid ? ' (Anda)' : ''}</th>${cells}<td class="value">${value}</td></tr>`;
   }).join('');
   const totals = ids.map((id) => `<td>${game.players.reduce((sum, player) => sum + (player.holdings[id] || 0), 0)}</td>`).join('');
-  elements.portfolioDashboard.innerHTML = `<div class="sidebar-heading"><h2>Dashboard Portofolio</h2><span>TERBUKA UNTUK SEMUA</span></div><div class="table-scroll"><table class="portfolio-table"><thead><tr><th>Pemain</th>${head}<th>Nilai saham<small>koin</small></th><th>Utang</th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total beredar</th>${totals}<td></td><td></td></tr></tfoot></table></div>`;
+  elements.portfolioDashboard.innerHTML = `<div class="sidebar-heading"><h2>Dashboard Portofolio</h2><span>TERBUKA UNTUK SEMUA</span></div><div class="table-scroll"><table class="portfolio-table"><thead><tr><th>Pemain</th>${head}<th>Nilai saham<small>koin</small></th></tr></thead><tbody>${body}</tbody><tfoot><tr><th>Total beredar</th>${totals}<td></td></tr></tfoot></table></div>`;
 }
 
 function renderBidding() {
